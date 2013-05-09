@@ -18,8 +18,8 @@
 using namespace gliby;
 using namespace Math3D;
 
-// TODO: Spawn a sphere
-// TODO: Spawn other objects (plane, cube...)
+// TODO: Spawn other objects (plane, cube, teapot...)
+
 // TODO: Render UI in overlay, create class to do so
 // TODO: Create a UI to switch models
 // TODO: Create a UI to change matrices
@@ -29,7 +29,7 @@ int window_w, window_h;
 std::string current_path;
 // shader stuff
 ShaderManager* shaderManager;
-GLuint shader;
+GLuint perspectiveShader;
 // transformation stuff
 Frame cameraFrame;
 Frustum viewFrustum;
@@ -37,13 +37,19 @@ TransformPipeline transformPipeline;
 MatrixStack modelViewMatrix;
 MatrixStack projectionMatrix;
 Matrix44f screenSpace;
+// objects
+Geometry* geometry[1];
+// texture
+GLuint object_texture;
 // ui windows
 /*GLTextureWindow* objectPicker;
 GLTextureWindow* matrixSettings;*/
+// state
+int current_geometry = 0;
 
 void setupContext(void){
     // general state
-    glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_CULL_FACE);
@@ -62,18 +68,31 @@ void setupContext(void){
     std::vector<const char*>* searchPath = new std::vector<const char*>();
     searchPath->push_back("./shaders/");
     searchPath->push_back("/home/ego/projects/personal/gliby/shaders/");
-    // TODO: setup shaders, shader attributes
+    shaderManager = new ShaderManager(searchPath);
+    ShaderAttribute attrs[] = {{0,"vVertex"},{3,"vTexCoord"}};
+    perspectiveShader = shaderManager->buildShaderPair("simple_perspective.vp","simple_perspective.fp",sizeof(attrs)/sizeof(ShaderAttribute),attrs);
 
     // setup geometry
-    TriangleBatch& sphereBatch = GeometryFactory::sphere(0.2f, 20, 20); 
-    // TODO: other objects, initialize texture
+    TriangleBatch& sphereBatch = GeometryFactory::sphere(0.4f, 40, 40); 
+    geometry[0] = &sphereBatch;
+
+    // setup object texture
+    glActiveTexture(GL_TEXTURE0);
+    glGenTextures(1, &object_texture);
+    glBindTexture(GL_TEXTURE_2D, object_texture);
+    glfwLoadTexture2D("icemoon.tga",0);
+    GLfloat largest_anisotropy;
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &largest_anisotropy);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, largest_anisotropy);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
     // initialize berkelium
     if(!Berkelium::init(Berkelium::FileString::empty())){
         std::cerr << "Failed to initialize Berkelium!" << std::endl;
     }
     // create berkelium windows
-    glActiveTexture(GL_TEXTURE0);
     // TODO: do first with existing class, then move to new namespaced one with more advanced callback support
 
 }
@@ -101,11 +120,26 @@ void render(void){
     Berkelium::update();
 
     // setup up camera
+    cameraFrame.moveForward(3.0f);
+    cameraFrame.rotateWorld(0.01f, 0.0f, 1.0f, 0.0f);
+    cameraFrame.moveForward(-3.0f);
+    Matrix44f mCamera;
+    cameraFrame.getCameraMatrix(mCamera);
+    modelViewMatrix.pushMatrix();
+    modelViewMatrix.multMatrix(mCamera);
     
     // drawing
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     // model
+    glUseProgram(perspectiveShader);
+    glBindTexture(GL_TEXTURE_2D, object_texture);
+    glUniformMatrix4fv(glGetUniformLocation(perspectiveShader,"mvpMatrix"), 1, GL_FALSE, transformPipeline.getModelViewProjectionMatrix());
+    glUniform1i(glGetUniformLocation(perspectiveShader,"textureUnit"), 0);
+    geometry[current_geometry]->draw();
+
+    // pop off transformations
+    modelViewMatrix.popMatrix();
 
     // overlay
     glEnable(GL_BLEND);
