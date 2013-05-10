@@ -9,6 +9,7 @@
 
 #include "ShaderManager.h"
 #include "TriangleBatch.h"
+#include "Batch.h"
 #include "GeometryFactory.h"
 #include "MatrixStack.h"
 #include "Frustum.h"
@@ -18,11 +19,11 @@
 using namespace gliby;
 using namespace Math3D;
 
-// TODO: Spawn other objects (plane, cube, teapot...)
+// TODO: Spawn other objects (cilinder, teapot...)
 
 // TODO: Render UI in overlay, create class to do so
 // TODO: Create a UI to switch models
-// TODO: Create a UI to change matrices
+// TODO: Create a UI to display & change matrices
 
 int mouse_x, mouse_y;
 int window_w, window_h;
@@ -38,7 +39,7 @@ MatrixStack modelViewMatrix;
 MatrixStack projectionMatrix;
 Matrix44f screenSpace;
 // objects
-Geometry* geometry[1];
+Geometry* geometry[3];
 // texture
 GLuint object_texture;
 // ui windows
@@ -75,6 +76,10 @@ void setupContext(void){
     // setup geometry
     TriangleBatch& sphereBatch = GeometryFactory::sphere(0.4f, 40, 40); 
     geometry[0] = &sphereBatch;
+    Batch& planeBatch = GeometryFactory::plane(1.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+    geometry[1] = &planeBatch;
+    Batch& cubeBatch = GeometryFactory::cube(0.4f);
+    geometry[2] = &cubeBatch;
 
     // setup object texture
     glActiveTexture(GL_TEXTURE0);
@@ -105,10 +110,14 @@ void keyCallback(int id, int state){
     if(id == GLFW_KEY_ESC && state == GLFW_RELEASE){
         glfwCloseWindow();
     }
+    if(id == GLFW_KEY_SPACE && state == GLFW_RELEASE){
+        ++current_geometry;
+        if(current_geometry > (sizeof(geometry)/sizeof(Geometry*))-1) current_geometry = 0;
+        std::cout << current_geometry << std::endl;
+    }
 }
 
 void charCallback(int character, int action){
-
 }
 
 void mouseCallback(int id, int state){
