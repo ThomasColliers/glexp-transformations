@@ -15,18 +15,18 @@
 #include "Frustum.h"
 #include "TransformPipeline.h"
 #include "Math3D.h"
+#include "TextureWindow.h"
+#include "UIElement.h"
 
 using namespace gliby;
 using namespace Math3D;
 
-// TODO: Render UI in overlay, create class to do so
-
-// TODO: Create a UI to switch models
+// TODO: Positioneren vereenvoudigen
+// TODO: Input events opvangen en doorsturen
 // TODO: Create a UI to display & change matrices
 
 int mouse_x, mouse_y;
 int window_w, window_h;
-std::string current_path;
 // shader stuff
 ShaderManager* shaderManager;
 GLuint perspectiveShader;
@@ -40,12 +40,10 @@ MatrixStack projectionMatrix;
 Matrix44f screenSpace;
 // objects
 Geometry* geometry[2];
-Batch* uiBatch;
 // texture
 GLuint object_texture;
 // ui windows
-/*GLTextureWindow* objectPicker;
-GLTextureWindow* matrixSettings;*/
+UIElement* uiElement;
 // state
 unsigned int current_geometry = 0;
 
@@ -80,8 +78,6 @@ void setupContext(void){
     geometry[0] = &sphereBatch;
     Batch& cubeBatch = GeometryFactory::cube(0.4f);
     geometry[1] = &cubeBatch;
-    // ui batch
-    uiBatch = &GeometryFactory::overlay(200.0f,200.0f,10.0f,210.0f);
 
     // setup object texture
     glActiveTexture(GL_TEXTURE0);
@@ -99,9 +95,9 @@ void setupContext(void){
     if(!Berkelium::init(Berkelium::FileString::empty())){
         std::cerr << "Failed to initialize Berkelium!" << std::endl;
     }
-    // create berkelium windows
-    // TODO: do first with existing class, then move to new namespaced one with more advanced callback support
 
+    // TODO: allow for local paths
+    uiElement = new UIElement("http://thomascolliers.com",200,200,0,0,screenSpace,overlayShader);
 }
 
 void receiveInput(){
@@ -155,20 +151,7 @@ void render(void){
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glUseProgram(overlayShader);
-    glUniform1i(glGetUniformLocation(overlayShader,"textureUnit"),0);
-    /*loadIdentity44(screenSpace);
-    screenSpace[0] = 0.0025;
-    screenSpace[5] = 0.0033;
-    screenSpace[10] = -1;
-
-    screenSpace[12] = 0;
-    screenSpace[13] = 0;*/
-    /*outputMatrix44(screenSpace);*/
-    outputMatrix44(screenSpace);
-    glUniformMatrix4fv(glGetUniformLocation(overlayShader,"mvpMatrix"), 1, GL_FALSE, screenSpace);
-    glBindTexture(GL_TEXTURE_RECTANGLE, object_texture);
-    uiBatch->draw();
-
+    uiElement->draw();
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 }
@@ -185,9 +168,6 @@ void resizeCallback(int width, int height){
 }
 
 int main(int argc, char **argv){
-    // get current path using boost
-    current_path = boost::filesystem::system_complete(argv[0]).parent_path().parent_path().string();
-
     // init glfw and window
     if(!glfwInit()){
         std::cerr << "GLFW init failed" << std::endl;
