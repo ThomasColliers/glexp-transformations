@@ -20,6 +20,7 @@ using namespace gliby;
 using namespace Math3D;
 
 // TODO: Render UI in overlay, create class to do so
+
 // TODO: Create a UI to switch models
 // TODO: Create a UI to display & change matrices
 
@@ -29,6 +30,7 @@ std::string current_path;
 // shader stuff
 ShaderManager* shaderManager;
 GLuint perspectiveShader;
+GLuint overlayShader;
 // transformation stuff
 Frame cameraFrame;
 Frustum viewFrustum;
@@ -38,21 +40,22 @@ MatrixStack projectionMatrix;
 Matrix44f screenSpace;
 // objects
 Geometry* geometry[2];
+Batch* uiBatch;
 // texture
 GLuint object_texture;
 // ui windows
 /*GLTextureWindow* objectPicker;
 GLTextureWindow* matrixSettings;*/
 // state
-int current_geometry = 0;
+unsigned int current_geometry = 0;
 
 void setupContext(void){
     // general state
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+    //glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
     // setup transform pipeline
@@ -70,12 +73,15 @@ void setupContext(void){
     shaderManager = new ShaderManager(searchPath);
     ShaderAttribute attrs[] = {{0,"vVertex"},{3,"vTexCoord"}};
     perspectiveShader = shaderManager->buildShaderPair("simple_perspective.vp","simple_perspective.fp",sizeof(attrs)/sizeof(ShaderAttribute),attrs);
+    overlayShader = shaderManager->buildShaderPair("overlay.vp","overlay.fp",sizeof(attrs)/sizeof(ShaderAttribute),attrs);
 
     // setup geometry
     TriangleBatch& sphereBatch = GeometryFactory::sphere(0.4f, 40, 40); 
     geometry[0] = &sphereBatch;
     Batch& cubeBatch = GeometryFactory::cube(0.4f);
     geometry[1] = &cubeBatch;
+    // ui batch
+    uiBatch = &GeometryFactory::overlay(200.0f,200.0f,10.0f,210.0f);
 
     // setup object texture
     glActiveTexture(GL_TEXTURE0);
@@ -148,7 +154,21 @@ void render(void){
     // overlay
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
-    
+    glUseProgram(overlayShader);
+    glUniform1i(glGetUniformLocation(overlayShader,"textureUnit"),0);
+    /*loadIdentity44(screenSpace);
+    screenSpace[0] = 0.0025;
+    screenSpace[5] = 0.0033;
+    screenSpace[10] = -1;
+
+    screenSpace[12] = 0;
+    screenSpace[13] = 0;*/
+    /*outputMatrix44(screenSpace);*/
+    outputMatrix44(screenSpace);
+    glUniformMatrix4fv(glGetUniformLocation(overlayShader,"mvpMatrix"), 1, GL_FALSE, screenSpace);
+    glBindTexture(GL_TEXTURE_RECTANGLE, object_texture);
+    uiBatch->draw();
+
     glDisable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
 }
