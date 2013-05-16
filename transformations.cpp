@@ -97,11 +97,12 @@ void setupContext(void){
     }
 
     // TODO: allow for local paths
-    uiElement = new UIElement("http://thomascolliers.com",200,200,0,0,screenSpace,overlayShader);
+    uiElement = new UIElement("http://google.com",300,200,10,10,screenSpace,window_w,window_h,overlayShader);
 }
 
 void receiveInput(){
     glfwGetMousePos(&mouse_x, &mouse_y);
+    uiElement->mouseUpdate(mouse_x,mouse_y);
 }
 
 void keyCallback(int id, int state){
@@ -112,13 +113,15 @@ void keyCallback(int id, int state){
         ++current_geometry;
         if(current_geometry > (sizeof(geometry)/sizeof(Geometry*))-1) current_geometry = 0;
     }
+    uiElement->keyEvent(id,state);
 }
 
 void charCallback(int character, int action){
+    uiElement->charEvent(character,action);
 }
 
 void mouseCallback(int id, int state){
-
+    uiElement->mouseEvent(id,state);
 }
 
 void render(void){
@@ -165,6 +168,8 @@ void resizeCallback(int width, int height){
     projectionMatrix.loadMatrix(viewFrustum.getProjectionMatrix());
     // update orthographic matrix
     makeOrthographicMatrix(screenSpace, 0.0f, float(window_w), 0.0f, float(window_h), -1.0f, 1.0f);
+    // update UI elements
+    if(uiElement) uiElement->resize(width,height);
 }
 
 int main(int argc, char **argv){
