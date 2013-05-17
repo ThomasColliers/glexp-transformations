@@ -3,11 +3,42 @@
     <head>
         <meta charset="utf-8" />
         <style>
+            * { margin: 0; padding: 0; }
+            body { color: #fff; font-family: Verdana, Helvetica, sans-serif; }
+            p { font-size: 12px; margin-bottom: 5px; }
+            input { border: 1px solid #eee; border-radius: 4px; width: 25px; float: left; text-align: center; margin-right: 2px; } 
+            .row { clear: both; margin-top: 2px; overflow: hidden; }
         </style>
         <script>
         </script>
     </head>
     <body>
-        <p>Local page test</p>
+        <form>
+            <p>Object transformation matrix</p>
+            <div class="row">
+                <input type="text" value="1">
+                <input type="text" value="0">
+                <input type="text" value="0">
+                <input type="text" value="0">
+            </div>
+            <div class="row">
+                <input type="text" value="0">
+                <input type="text" value="1">
+                <input type="text" value="0">
+                <input type="text" value="0">
+            </div>
+            <div class="row">
+                <input type="text" value="0">
+                <input type="text" value="0">
+                <input type="text" value="1">
+                <input type="text" value="0">
+            </div>
+            <div class="row">
+                <input type="text" value="0">
+                <input type="text" value="0">
+                <input type="text" value="0">
+                <input type="text" value="1">
+            </div>
+        </form>
     </body>
 </html>

@@ -21,9 +21,10 @@
 using namespace gliby;
 using namespace Math3D;
 
-// TODO: Positioneren vereenvoudigen
-// TODO: Input events opvangen en doorsturen
-// TODO: Create a UI to display & change matrices
+// TODO: vang (onder andere) tab op en stuur door naar bk
+// TODO: create javascript event dispatcher and listen for event
+// TODO: build matrix based on what's in the matrix and use that to transform the object
+// TODO: add a grid and axes to get a better idea of the world
 
 int mouse_x, mouse_y;
 int window_w, window_h;
@@ -97,7 +98,7 @@ void setupContext(void){
     }
 
     // TODO: allow for local paths
-    uiElement = new UIElement("page.html",300,200,10,10,screenSpace,window_w,window_h,overlayShader,false,true);
+    uiElement = new UIElement("page.html",300,200,10,10,screenSpace,window_w,window_h,overlayShader,true,true);
 }
 
 void receiveInput(){
@@ -106,14 +107,20 @@ void receiveInput(){
 }
 
 void keyCallback(int id, int state){
+    // close window on esc
     if(id == GLFW_KEY_ESC && state == GLFW_RELEASE){
         glfwCloseWindow();
     }
+    // switch geometry on space
     if(id == GLFW_KEY_SPACE && state == GLFW_RELEASE){
         ++current_geometry;
         if(current_geometry > (sizeof(geometry)/sizeof(Geometry*))-1) current_geometry = 0;
     }
-    uiElement->keyEvent(id,state);
+    // pass to ui elements
+    bool shift_down = glfwGetKey(287) == GLFW_PRESS;
+    bool ctrl_down = glfwGetKey(289) == GLFW_PRESS;
+    bool alt_down = glfwGetKey(291) == GLFW_PRESS;
+    uiElement->keyEvent(id,state,shift_down,ctrl_down,alt_down);
 }
 
 void charCallback(int character, int action){
