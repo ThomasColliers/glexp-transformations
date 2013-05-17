@@ -97,7 +97,7 @@ void setupContext(void){
     }
 
     // TODO: allow for local paths
-    uiElement = new UIElement("http://google.com",300,200,10,10,screenSpace,window_w,window_h,overlayShader);
+    uiElement = new UIElement("page.html",300,200,10,10,screenSpace,window_w,window_h,overlayShader,false,true);
 }
 
 void receiveInput(){
