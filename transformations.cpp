@@ -6,6 +6,7 @@
 #include <GL/glew.h>
 #include <GL/glfw.h>
 #include "berkelium/Berkelium.hpp"
+#include <jsoncpp/json/json.h>
 
 #include "ShaderManager.h"
 #include "TriangleBatch.h"
@@ -21,7 +22,6 @@
 using namespace gliby;
 using namespace Math3D;
 
-// TODO: vang (onder andere) tab op en stuur door naar bk
 // TODO: create javascript event dispatcher and listen for event
 // TODO: build matrix based on what's in the matrix and use that to transform the object
 // TODO: add a grid and axes to get a better idea of the world
@@ -47,6 +47,10 @@ GLuint object_texture;
 UIElement* uiElement;
 // state
 unsigned int current_geometry = 0;
+
+void matrixUpdate(Json::Value* root){
+    std::cout << "handler reached" << std::endl;
+}
 
 void setupContext(void){
     // general state
@@ -97,8 +101,10 @@ void setupContext(void){
         std::cerr << "Failed to initialize Berkelium!" << std::endl;
     }
 
-    // TODO: allow for local paths
-    uiElement = new UIElement("page.html",300,200,10,10,screenSpace,window_w,window_h,overlayShader,true,true);
+    uiElement = new UIElement(300,200,10,10,screenSpace,window_w,window_h,overlayShader,true,true);
+    CallbackHandler* handler = new CallbackHandler({Berkelium::WideString::point_to(L"matrixUpdate"),matrixUpdate});
+    uiElement->getWindow().registerCallback(handler);
+    uiElement->load("page.html");
 }
 
 void receiveInput(){
