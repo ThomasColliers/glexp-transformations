@@ -102,8 +102,7 @@ void setupContext(void){
     }
 
     uiElement = new UIElement(300,200,10,10,screenSpace,window_w,window_h,overlayShader,true,true);
-    CallbackHandler* handler = new CallbackHandler({Berkelium::WideString::point_to(L"matrixUpdate"),matrixUpdate});
-    uiElement->getWindow().registerCallback(handler);
+    uiElement->getWindow().registerCallback(L"matrixUpdate",&matrixUpdate);
     uiElement->load("page.html");
 }
 
