@@ -8,7 +8,7 @@ function valueChanged(){
         for(var row = 0; row < 4; row++){
             var rowElement = $('.row',form).eq(row);
             var val = $('input',rowElement).eq(column).val();
-            matrix[column*4+row] = val;
+            matrix[column*4+row] = parseFloat(val,10);
         }
     }
     matrixUpdate(JSON.stringify({"matrix":matrix}));
@@ -16,5 +16,5 @@ function valueChanged(){
 
 function init(){
     // add event listener to each 
-    $('form input').on('keyup',valueChanged).on('change',valueChanged);
+    $('form input').on('keyup',valueChanged).on('change',valueChanged).on('click',valueChanged);
 }

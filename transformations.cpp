@@ -22,8 +22,6 @@
 using namespace gliby;
 using namespace Math3D;
 
-// TODO: create javascript event dispatcher and listen for event
-// TODO: build matrix based on what's in the matrix and use that to transform the object
 // TODO: add a grid and axes to get a better idea of the world
 
 int mouse_x, mouse_y;
@@ -39,6 +37,7 @@ TransformPipeline transformPipeline;
 MatrixStack modelViewMatrix;
 MatrixStack projectionMatrix;
 Matrix44f screenSpace;
+Matrix44f objectTransform;
 // objects
 Geometry* geometry[2];
 // texture
@@ -49,6 +48,12 @@ UIElement* uiElement;
 unsigned int current_geometry = 0;
 
 void matrixUpdate(Json::Value* root){
+    Json::Value& ref = *root;
+    const Json::Value matrix = ref["matrix"];
+    for(uint i = 0; i < matrix.size(); i++){
+        if(matrix[i].isNumeric()) objectTransform[i] = matrix[i].asFloat();
+        else objectTransform[i] = 0.0f;
+    }
     std::cout << "handler reached" << std::endl;
 }
 
@@ -66,6 +71,7 @@ void setupContext(void){
     viewFrustum.setPerspective(35.0f, float(window_w)/float(window_h),1.0f,500.0f);
     projectionMatrix.loadMatrix(viewFrustum.getProjectionMatrix());
     modelViewMatrix.loadIdentity();
+    loadIdentity44(objectTransform);
     cameraFrame.moveForward(-3.0f);
     makeOrthographicMatrix(screenSpace, 0.0f, float(window_w), 0.0f, float(window_h), -1.0f, 1.0f);
 
@@ -140,17 +146,20 @@ void render(void){
     // update berkelium
     Berkelium::update();
 
+    // drawing
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
     // setup up camera
     cameraFrame.moveForward(3.0f);
     cameraFrame.rotateWorld(0.01f, 0.0f, 1.0f, 0.0f);
     cameraFrame.moveForward(-3.0f);
     Matrix44f mCamera;
     cameraFrame.getCameraMatrix(mCamera);
+
+    // set up transformations
     modelViewMatrix.pushMatrix();
     modelViewMatrix.multMatrix(mCamera);
-    
-    // drawing
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    modelViewMatrix.multMatrix(objectTransform);
 
     // model
     glUseProgram(perspectiveShader);
@@ -185,6 +194,9 @@ void resizeCallback(int width, int height){
 }
 
 int main(int argc, char **argv){
+    // even with glfwSwapInterval set I get a fixed tear line so this env var will force the driver to vsync properly
+    putenv((char*) "__GL_SYNC_TO_VBLANK=1");
+
     // init glfw and window
     if(!glfwInit()){
         std::cerr << "GLFW init failed" << std::endl;
