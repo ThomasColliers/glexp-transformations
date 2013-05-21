@@ -18,11 +18,14 @@
 #include "Math3D.h"
 #include "TextureWindow.h"
 #include "UIElement.h"
+#include "Grid.h"
 
 using namespace gliby;
 using namespace Math3D;
 
 // TODO: add a grid and axes to get a better idea of the world
+// TODO: mouse support
+// TODO: add arbitrary models
 
 int mouse_x, mouse_y;
 int window_w, window_h;
@@ -40,6 +43,7 @@ Matrix44f screenSpace;
 Matrix44f objectTransform;
 // objects
 Geometry* geometry[2];
+Grid* grid;
 // texture
 GLuint object_texture;
 // ui windows
@@ -89,6 +93,7 @@ void setupContext(void){
     geometry[0] = &sphereBatch;
     Batch& cubeBatch = GeometryFactory::cube(0.4f);
     geometry[1] = &cubeBatch;
+    grid = new Grid(shaderManager,1.0f,10);
 
     // setup object texture
     glActiveTexture(GL_TEXTURE0);
@@ -156,17 +161,23 @@ void render(void){
     Matrix44f mCamera;
     cameraFrame.getCameraMatrix(mCamera);
 
-    // set up transformations
+    // set up camera transformation
     modelViewMatrix.pushMatrix();
     modelViewMatrix.multMatrix(mCamera);
-    modelViewMatrix.multMatrix(objectTransform);
 
     // model
+    modelViewMatrix.pushMatrix();
+    modelViewMatrix.multMatrix(objectTransform);
     glUseProgram(perspectiveShader);
     glBindTexture(GL_TEXTURE_2D, object_texture);
-    glUniformMatrix4fv(glGetUniformLocation(perspectiveShader,"mvpMatrix"), 1, GL_FALSE, transformPipeline.getModelViewProjectionMatrix());
+    glUniformMatrix4fv(glGetUniformLocation(perspectiveShader,"mvpMatrix"), 1, GL_FALSE, transformPipeline.getModelViewProjectionMatrix()); // TODO: should cache the uniform location
     glUniform1i(glGetUniformLocation(perspectiveShader,"textureUnit"), 0);
     geometry[current_geometry]->draw();
+    modelViewMatrix.popMatrix();
+
+    // grid
+    GLfloat color[] = {1.0f,1.0f,1.0f,0.8f};
+    grid->draw(transformPipeline.getModelViewProjectionMatrix(),color);
 
     // pop off transformations
     modelViewMatrix.popMatrix();
