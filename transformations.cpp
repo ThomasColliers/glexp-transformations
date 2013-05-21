@@ -176,8 +176,8 @@ void render(void){
     modelViewMatrix.popMatrix();
 
     // grid
-    GLfloat color[] = {1.0f,1.0f,1.0f,0.8f};
-    grid->draw(transformPipeline.getModelViewProjectionMatrix(),color);
+    GLfloat color[] = {1.0f,1.0f,1.0f,0.1f};
+    grid->draw(modelViewMatrix,transformPipeline,color);
 
     // pop off transformations
     modelViewMatrix.popMatrix();
