@@ -23,9 +23,7 @@
 using namespace gliby;
 using namespace Math3D;
 
-// TODO: add a grid and axes to get a better idea of the world
 // TODO: mouse support
-// TODO: add arbitrary models
 
 int mouse_x, mouse_y;
 int window_w, window_h;
@@ -50,6 +48,13 @@ GLuint object_texture;
 UIElement* uiElement;
 // state
 unsigned int current_geometry = 0;
+// camera state
+bool mouseDown = false;
+double rotation_x = 0;
+double rotation_y = 0;
+int start_mouse_x, start_mouse_y;
+double start_rotation_x, start_rotation_y;
+float camera_distance = 3.0f;
 
 void matrixUpdate(Json::Value* root){
     Json::Value& ref = *root;
@@ -58,7 +63,6 @@ void matrixUpdate(Json::Value* root){
         if(matrix[i].isNumeric()) objectTransform[i] = matrix[i].asFloat();
         else objectTransform[i] = 0.0f;
     }
-    std::cout << "handler reached" << std::endl;
 }
 
 void setupContext(void){
@@ -76,7 +80,9 @@ void setupContext(void){
     projectionMatrix.loadMatrix(viewFrustum.getProjectionMatrix());
     modelViewMatrix.loadIdentity();
     loadIdentity44(objectTransform);
-    cameraFrame.moveForward(-3.0f);
+    // set origin at top
+    cameraFrame.setOrigin(0.0f,0.0f,3.0f);
+    cameraFrame.lookAt(0.0f,0.0f,0.0f);
     makeOrthographicMatrix(screenSpace, 0.0f, float(window_w), 0.0f, float(window_h), -1.0f, 1.0f);
 
     // setup shaders
@@ -112,7 +118,7 @@ void setupContext(void){
         std::cerr << "Failed to initialize Berkelium!" << std::endl;
     }
 
-    uiElement = new UIElement(300,200,10,10,screenSpace,window_w,window_h,overlayShader,true,true);
+    uiElement = new UIElement(300,200,10,10,screenSpace,window_w,window_h,overlayShader,true,false);
     uiElement->getWindow().registerCallback(L"matrixUpdate",&matrixUpdate);
     uiElement->load("page.html");
 }
@@ -120,6 +126,12 @@ void setupContext(void){
 void receiveInput(){
     glfwGetMousePos(&mouse_x, &mouse_y);
     uiElement->mouseUpdate(mouse_x,mouse_y);
+    if(mouseDown){
+        int dif_x = mouse_x - start_mouse_x;
+        int dif_y = mouse_y - start_mouse_y;
+        rotation_x = start_rotation_x + dif_x / 1000.0f;
+        rotation_y = start_rotation_y + dif_y / 1000.0f;
+    }
 }
 
 void keyCallback(int id, int state){
@@ -145,6 +157,27 @@ void charCallback(int character, int action){
 
 void mouseCallback(int id, int state){
     uiElement->mouseEvent(id,state);
+    if(id == 0 && state == 1){
+        glfwDisable(GLFW_MOUSE_CURSOR);
+        mouseDown = true;
+        start_mouse_x = mouse_x;
+        start_mouse_y = mouse_y;
+        start_rotation_x = rotation_x;
+        start_rotation_y = rotation_y;
+    }else if(id == 0 && state == 0){
+        glfwEnable(GLFW_MOUSE_CURSOR);
+        mouseDown = false;
+    }
+}
+
+void mouseWheelCallback(int pos){
+    static int wheelPosition = 0;
+    if(pos > wheelPosition){
+        camera_distance -= 0.1f;
+    }else if(pos < wheelPosition){
+        camera_distance += 0.1f;
+    }
+    wheelPosition = pos;
 }
 
 void render(void){
@@ -155,9 +188,16 @@ void render(void){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
     // setup up camera
-    cameraFrame.moveForward(3.0f);
-    cameraFrame.rotateWorld(0.01f, 0.0f, 1.0f, 0.0f);
-    cameraFrame.moveForward(-3.0f);
+    //double time = glfwGetTime() / 5;
+    Vector3f origin = {0.0f};
+    origin[0] = cos(rotation_x*2*PI);
+    origin[1] = cos(rotation_y*2*PI);
+    origin[2] = sin(rotation_x*2*PI);
+    normalizeVector(origin);
+    scaleVector3(origin,camera_distance);
+
+    cameraFrame.setOrigin(origin);
+    cameraFrame.lookAt(0.0f,0.0f,0.0f);
     Matrix44f mCamera;
     cameraFrame.getCameraMatrix(mCamera);
 
@@ -227,6 +267,7 @@ int main(int argc, char **argv){
     glfwSetKeyCallback(keyCallback);
     glfwSetCharCallback(charCallback);
     glfwSetMouseButtonCallback(mouseCallback);
+    glfwSetMouseWheelCallback(mouseWheelCallback);
     glfwSetWindowSizeCallback(resizeCallback);
     glfwSetWindowTitle("gltest");
 
