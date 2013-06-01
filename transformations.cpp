@@ -23,8 +23,6 @@
 using namespace gliby;
 using namespace Math3D;
 
-// TODO: mouse support
-
 int mouse_x, mouse_y;
 int window_w, window_h;
 // shader stuff
